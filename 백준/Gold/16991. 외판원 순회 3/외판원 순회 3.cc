@@ -1,67 +1,54 @@
 #include <iostream>
 #include <vector>
 #include <algorithm>
-#include <queue>
-#include <cstring>
 #include <cmath>
+#include <cstring>
 using namespace std;
-typedef long long ll;
-const int INF = 987654321;
 
 const int MAX_N = 16;
+const int INF = 987654321;
 int N;
-double xpos[MAX_N], ypos[MAX_N];
-double dist[MAX_N][MAX_N];
-double cache[1<<16][MAX_N];
+vector<pair<int, int>> cities;
+double cost[MAX_N][MAX_N], cache[MAX_N][1 << MAX_N];
 
-//마을 간 거리를 배열로 저장
-void precalc() {
-    for(int i=0;i<N;i++)
-        for(int j=0;j<N;j++)
-            dist[i][j] = sqrt((xpos[i]-xpos[j])*(xpos[i]-xpos[j]) + (ypos[i]-ypos[j])*(ypos[i]-ypos[j]));
+double getDist(int x1, int y1, int x2, int y2) {
+	return sqrt((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2));
 }
 
-//모든 마을을 방문하였는가?
-bool allVisited(int state) {
-    int i = 1;
-    while(i<(1<<N)) {
-        //방문하지 않은 마을일 경우
-        if(!(state&i)) return false;
-        i<<=1;
-    }
-    return true;
-}
+double travel(int here, int visit) {
+	if (visit == (1 << N) - 1) 
+		return cost[here][0];
 
-double TSP(int visited, int here) {
-    //기저조건 : 모든 마을을 다 돈 경우 (언제나 시작은 0번 마을)
-    if(allVisited(visited)) return dist[0][here];
-    double& ret = cache[visited][here];
-    if(ret!=-1) {
-        return ret;
-    }
-    ret = INF;
-    
-    //방문하지 않은 마을들
-    int notVisit = ~visited;
-    for(int i=0;i<N;i++) {
-        if(notVisit & (1<<i)) 
-            ret = min(ret, dist[here][i] + TSP(visited|(1<<i), i));
-    }
-    return ret;
+	double& ret = cache[here][visit];
+	if (ret != -1) return ret;
+	ret = INF;
+
+	visit |= (1 << here);
+	int canVisit = ~visit;
+	for (int i = 0; i < N; i++) {
+		if (canVisit & (1 << i))
+			ret = min(ret, cost[here][i] + travel(i, visit | (1 << i)));
+	}
+	return ret;
 }
-        
 
 int main() {
-    cout<<fixed; cout.precision(6);
-    cin>>N;
-    for(int i=0;i<N;i++)
-        cin>>xpos[i]>>ypos[i];
-    
-    for(int i=0;i<(1<<16);i++) 
-        for(int j=0;j<N;j++)
-            cache[i][j] = -1;
-    precalc();
-    
-    double answer = TSP(1, 0);
-    cout<<answer;
+	cout << fixed;
+	cout.precision(10);
+	cin >> N;
+	for (int i = 0; i < N; i++) {
+		int x, y;
+		cin >> x >> y;
+		cities.push_back(make_pair(x, y));
+	}
+	for (int i = 0; i < N; i++)
+		for (int j = i; j < N; j++) {
+			double dist = getDist(cities[i].first, cities[i].second, cities[j].first, cities[j].second);
+			cost[i][j] = dist;
+			cost[j][i] = dist;
+		}
+	for (int i = 0; i < N; i++)
+		for (int j = 0; j < (1 << N); j++)
+			cache[i][j] = -1;
+	cout << travel(0, 0);
 }
